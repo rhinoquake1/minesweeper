@@ -26,7 +26,10 @@ class GridCell:
         self.is_revealed = False
 
     def __repr__(self) -> str:
-        return f'[{self.repr}]'
+        if self.is_revealed:
+            return f'[{self.adj_mines}]'
+        else:
+            return f'[{self.repr}]'
 
     def __str__(self) -> str:
         return str(self.__repr__())
@@ -45,6 +48,7 @@ class GridCell:
 
     def reveal_empty_cell(self):
         self.is_revealed = True
+        self.repr = self.adj_mines
 
 class Grid:
     offset_3 = np.array([-1, 0 , 1])
@@ -74,17 +78,26 @@ class Grid:
     def __repr__(self) -> str:
         return f'grid: {self.rows} x {self.cols}\nmines: {self.mine_count}\n{self.display_grid()}'
 
-    def add_mines(self):
+    def add_mines(self, first_coord=None):
+        # the first coord (if provided) will not be a mine
+        # This is so the first cell will never be a mine
+        if first_coord == None:
+            first_coord = (
+                random.randint(0, self.rows-1),
+                random.randint(0, self.cols-1)
+                )
         # the below loop is checking if the randomly chosen cell is a mine
         # is not, it will run the convert_to_mine method and increment the mine counter
         mines_planted = 0
         grid = self.grid
-        while mines_planted <= self.mine_count:
+        while mines_planted < self.mine_count:
             row = random.randint(0, self.rows-1)
             col = random.randint(0, self.cols-1)
-            if not grid[row][col].is_mine:
-                grid[row][col].convert_to_mine()
+            cell = grid[row][col]
+            if not cell.is_mine and cell.coord != first_coord:
+                cell.convert_to_mine()
                 mines_planted += 1
+        self.select_cell(first_coord)
         return grid
 
     def get_adj_cells(self, coord, offset):
@@ -129,24 +142,40 @@ class Grid:
         return len(result)
 
     def cascade_empty_cells(self, cell : GridCell, offset):
-        for i in self.get_adj_cells(cell.coord, offset):
-            if cell.adj_mines == 0 and cell.is_empty and not cell.is_revealed:
+        items = self.flatten(self.get_adj_cells(cell.coord, offset))
+        for i in items:
+            if i.adj_mines == 0 and i.is_empty and not i.is_revealed:
                 cell.reveal_empty_cell()
                 self.cascade_empty_cells(i, offset)
+
+    def select_cell(self, coord):
+        row, col = coord
+        cell = self.grid[row][col]
+        if cell.is_revealed:
+            pass
+        if cell.is_mine:
+            print(':(')
+        if cell.is_empty:
+            cell.reveal_empty_cell()
+        else:
+            ':S'
 
     @staticmethod
     def flatten(t):
         return [item for sublist in t for item in sublist]
 
 
-result = Grid(20, 20, 50)
+result = Grid(20, 20, 100)
+first_coord = (6,6)
 
-result.add_mines()
+result.add_mines(first_coord)
 
 print(result)
 result.set_adj_counts()
 print(result)
 
 result.cascade_empty_cells(result.grid[0][0], result.offset_3)
+
+result.select_cell((0,0))
 
 print(result)
