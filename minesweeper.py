@@ -1,6 +1,7 @@
 import random
 from typing import Tuple
 import numpy as np
+import re
 
 class GridCell:
     '''
@@ -55,6 +56,8 @@ class Grid:
     offset_5 = np.array([-2, -1, 0 , 1, 2])
 
     def __init__(self, rows, cols, mine_count) -> None:
+        # grid is composed of lists nested within other lists
+        # each cell value is initally created as an empty GridCell obj
         self.rows = rows
         self.cols = cols
         self.mine_count = mine_count
@@ -164,18 +167,77 @@ class Grid:
     def flatten(t):
         return [item for sublist in t for item in sublist]
 
+def int_input(prompt):
+    # repeats prompt until user enters value that can be converted to a int
+    while True:
+        try:
+            userInput = int(input(prompt))       
+        except ValueError:
+            print("Not an integer! Try again.")
+            continue
+        else:
+            return userInput 
+        break
 
-result = Grid(20, 20, 100)
-first_coord = (6,6)
+def mine_input(prompt, rows, cols):
+    # max_value is there as there cannot be more mines than cells in the grid
+    max_value = (rows * cols) - 1
+    while True:
+        userInput = int_input(prompt)
+        if userInput > max_value:
+            print(f"Cannot exceed {max_value} mines within grid! Try again.")
+            continue
+        elif userInput <= 0:
+            print(f"More mines! Try again.")
+            continue
+        else:
+            return userInput
+        break
 
-result.add_mines(first_coord)
+def coord_input(prompt, max_rows, max_cols):
+    while True:
+        userInput = input(prompt)
+        if userInput == 'exit':
+            break
+        userInput = re.split(r'[,\s]', userInput)
+        if len(userInput) != 2:
+            print("Not a valid coord! Try again.")
+            continue
+        try:
+            coords = tuple(map(int, userInput))
+        except: 
+            print("Not a valid coord! Try again.")
+            continue
+        if coords[0] > max_rows or coords[0] < 1 or coords[1] > max_cols or coords[1] <1:
+            print("Out of range! Try again.")
+            continue
+        else:
+            return tuple(np.array(coords)-1)
+       
 
-print(result)
-result.set_adj_counts()
-print(result)
+def run():
+    rows = int_input('Input number of rows: ')
+    cols = int_input('Input number of cols: ')
+    mines = mine_input('Input number of mines: ', rows, cols)
+    game = Grid(rows, cols, mines)
+    first_coord = coord_input('Select a coord (X Y): ', rows, cols)
+    game.add_mines(first_coord)
+    print(first_coord)
+    game.set_adj_counts()
 
-result.cascade_empty_cells(result.grid[0][0], result.offset_3)
+run()
 
-result.select_cell((0,0))
+# result = Grid(20, 20, 100)
+# first_coord = (6,6)
 
-print(result)
+# result.add_mines(first_coord)
+
+# print(result)
+# result.set_adj_counts()
+# print(result)
+
+# result.cascade_empty_cells(result.grid[0][0], result.offset_3)
+
+# result.select_cell((0,0))
+
+# print(result)
